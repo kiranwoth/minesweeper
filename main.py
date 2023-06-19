@@ -6,6 +6,7 @@ class Cell():
         self.y = y
     revealed: bool = False
     isMine: bool = False
+    isFlag: bool = False
     surrounding: int = 0
 
 class MineField():
@@ -13,15 +14,19 @@ class MineField():
         self.field = createField(x, y)
         placeMines(x, y, mines, self.field)
         countSurrounding(x, y, self.field)
+
     def __str__(self) -> str:
         out = ""
         for row in self.field:
             for cell in row:
-                if cell.isMine: out += "M "
-                else: out += "{} ".format(cell.surrounding)
+                if cell.isMine: out += " M "
+                elif cell.revealed: out += "R{} ".format(cell.surrounding)
+                else: out += " {} ".format(cell.surrounding)
             out += "\n"
         return out
+    
     uncoveredCells: int = 0
+    active: bool = True
 
 def createField(x, y):
     #creates field of size xy
@@ -72,17 +77,44 @@ def countSurrounding(x, y, field):
             field[i][j].surrounding = count
     return
 
-def uncoverCell(x, y, field):
+def uncoverCell(x, y, field, board):
     #uncovers cell xy in field
+    if field[y][x].revealed: return 0
+
+    if field[y][x].isMine: 
+        loseGame(board)
+    elif field[y][x].surrounding == 0:
+        #call this function on surrounding cells
+        pass
+    field[y][x].revealed = True
+    return 1
+
+def flagCell(x, y, board):
+    #flags cell xy in field
     pass
 
-def winGame():
-    pass
-def loseGame():
-    pass
+def winGame(board):
+    board.active = False
+    print(board)
+    print("You won!")
+
+def loseGame(board):
+    board.active = False
+    print("You Lost! haha")
 
 def main():
-    board = MineField(5, 5, 5)
-    print(board)
+    rows = 5
+    cols = 5
+    mines = 5
+    board = MineField(cols, rows, mines)
+
+    while board.active:
+        print(board)
+        selection = input("Click a square: ")
+        x = int(selection[0])
+        y = int(selection[2])
+
+        board.uncoveredCells += uncoverCell(x, y, board.field, board)
+        if board.uncoveredCells >= (cols * rows) - mines: winGame(board)
 
 main()
