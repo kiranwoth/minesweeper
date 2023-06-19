@@ -72,6 +72,15 @@ def countSurrounding(x, y, field):
             field[i][j].surrounding = count
     return
 
+def uncoverCell(x, y, field):
+    #uncovers cell xy in field
+    pass
+
+def winGame():
+    pass
+def loseGame():
+    pass
+
 def main():
     board = MineField(5, 5, 5)
     print(board)
