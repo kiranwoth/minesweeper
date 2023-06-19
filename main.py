@@ -71,3 +71,9 @@ def countSurrounding(x, y, field):
                     if field[i+1][j+1].isMine: count += 1
             field[i][j].surrounding = count
     return
+
+def main():
+    board = MineField(5, 5, 5)
+    print(board)
+
+main()
