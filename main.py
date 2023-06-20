@@ -1,4 +1,4 @@
-import schemas
+import minesweeper
 
 def uncoverCell(x, y, field, board):
     #uncovers cell xy in field
@@ -30,7 +30,7 @@ def main():
     rows = 5
     cols = 5
     mines = 5
-    board = schemas.MineField(cols, rows, mines)
+    board = minesweeper.MineField(cols, rows, mines)
 
     while board.active:
         print(board)
