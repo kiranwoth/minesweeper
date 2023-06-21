@@ -36,6 +36,7 @@ class tile(QWidget):
     clicked = pyqtSignal()
     bomb_click = pyqtSignal()
     flagged = pyqtSignal(int)
+    expand = pyqtSignal(int, int)
 
     is_revealed = False
     is_start = False
@@ -46,7 +47,7 @@ class tile(QWidget):
     def __init__(self, x, y):
         super().__init__()
 
-        self.setFixedSize(QSize(40, 40))
+        self.setFixedSize(QSize(30, 30))
         self.x = x
         self.y = y
         
@@ -59,18 +60,13 @@ class tile(QWidget):
     #                                   might need to change way to draw the clicked bomb
     #                               TODO need way to draw wrongly flagged tiles on game end
 
-    #                               TODO make this pseudo code actual code
-        #if revealed set both inner/outer colour to background
-        #else set inner/outer to tile colours
         inner_colour = None
         border_colour = QColor("gray")
         if self.is_revealed:
             inner_colour = QColor("lightGray")
         else:
             inner_colour = QColor("darkGray")
-        
-        #fill r with inner colour
-        #draw rect around r with outer       
+              
         p.fillRect(r, inner_colour)
         pen = QPen(border_colour)
         p.setPen(pen)
@@ -86,26 +82,18 @@ class tile(QWidget):
                 p.setPen(pen)
                 p.drawText(r, Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignVCenter, str(self.adjacent))
 
-        #if flagged draw flag
         if self.is_flagged:
             p.fillRect(r, border_colour)
         
         p.end()
-    
-    #                               TODO func
+
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.MouseButton.RightButton:
             self.flag()
         
         elif event.button() == Qt.MouseButton.LeftButton:
-            self.click()
+            self.reveal()
 
-    #                               TODO func
-    def click(self):
-        self.reveal()
-        self.clicked.emit()
-
-    #                               TODO way to change mine remaining number when tile is flagged
     def flag(self):
         if self.is_flagged:
             self.is_flagged = False
@@ -119,9 +107,16 @@ class tile(QWidget):
         
 
     def reveal(self):
-        if not self.is_flagged:
-            self.is_revealed = True
-            self.update()
+        if self.is_flagged or self.is_revealed:
+            return
+        
+        self.is_revealed = True
+        if self.is_mine:
+            self.bomb_click.emit()
+        elif self.adjacent == 0:
+            self.expand.emit(self.x, self.y)
+            pass
+        self.update()
 
 
 
@@ -214,6 +209,7 @@ class MainWindow(QMainWindow):
             for j in range(0, y):
                 w = tile(i, j)
                 w.flagged.connect(self.tile_flagged)
+                w.expand.connect(self.reveal_adjacent)
                 self.grid.addWidget(w, j, i)
         
         self.create_new_mines(x, y, m)
@@ -258,6 +254,10 @@ class MainWindow(QMainWindow):
                             if self.grid.itemAtPosition(i+1, j+1).widget().is_mine: count += 1
                     w.adjacent = count
 
+    def reveal_adjacent(self, x, y):
+        for i in range(max(0, y - 1), min(y+2, self.y)):
+            for j in range(max(0, x - 1), min(x+2, self.x)):
+                self.grid.itemAtPosition(i, j).widget().reveal()
 
     def tile_flagged(self, i):
         self.mines += i
