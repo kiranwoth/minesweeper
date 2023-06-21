@@ -65,6 +65,11 @@ class tile(QWidget):
 
 
 class MainWindow(QMainWindow):
+    hb = None
+    grid = None
+    x = None
+    y = None
+
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Minesweeper")
@@ -82,12 +87,9 @@ class MainWindow(QMainWindow):
         toolbar.addAction(menu_button)
         self.addToolBar(toolbar)
 
-        self.hb = None
         self.create_header()
-
         #                           TODO make field with the correct things
-        self.grid = None
-        self.init_field(12, 12)
+        self.create_field(12, 12)
 
         vb = QVBoxLayout()
         vb.addLayout(self.hb)
@@ -115,11 +117,11 @@ class MainWindow(QMainWindow):
 
         self._timer = QTimer()
         #                           TODO make and connect timer function
-        self.button = QPushButton("R")
-        self.button.setFixedSize(QSize(32, 32))
-        self.button.setIconSize(QSize(32, 32))
-        self.button.setFlat(True)
-        #connect button.pressed to self.button_pressed or something
+        self.restart_button = QPushButton("R")
+        self.restart_button.setFixedSize(QSize(32, 32))
+        self.restart_button.setIconSize(QSize(32, 32))
+        self.restart_button.setFlat(True)
+        self.restart_button.released.connect(self.restart)
         #                           TODO MAKE BUTTON IMAGE
         #                           TODO MAKE BUTTON FUNCTION
 
@@ -137,7 +139,9 @@ class MainWindow(QMainWindow):
         self.hb.addWidget(self.clock)
         self.hb.addWidget(clockIcon)
 
-    def init_field(self, x, y):
+    def create_field(self, x, y):
+        self.x = x
+        self.y = y
         self.grid = QGridLayout()
         self.grid.setSpacing(5)
 
@@ -147,9 +151,21 @@ class MainWindow(QMainWindow):
                 w.setFixedSize(QSize(40, 40))
                 self.grid.addWidget(w, j, i)
 
+    def restart(self):
+        self.create_header()
+        self.create_field(self.x, self.y)
+
+        vb = QVBoxLayout()
+        vb.addLayout(self.hb)
+        vb.addLayout(self.grid)
+        
+        w = QWidget()
+        w.setLayout(vb)
+        self.setCentralWidget(w)
+
     def open_menu(self):
         self.create_header()
-        self.init_field(5, 5)
+        self.create_field(5, 5)
 
         vb = QVBoxLayout()
         vb.addLayout(self.hb)
