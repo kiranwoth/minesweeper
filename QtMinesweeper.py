@@ -98,7 +98,7 @@ class MainWindow(QMainWindow):
 
     def open_menu(self):
         self.create_header()
-        self.init_field(10, 10)
+        self.init_field(5, 5)
 
         vb = QVBoxLayout()
         vb.addLayout(self.hb)
@@ -107,6 +107,7 @@ class MainWindow(QMainWindow):
         w = QWidget()
         w.setLayout(vb)
         self.setCentralWidget(w)
+        self.adjustSize()
 
 
 app = QApplication([])
