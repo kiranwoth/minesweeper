@@ -9,9 +9,6 @@ from PyQt6.QtWidgets import (
 from random import randrange
 
 #TODO
-#colour global variables
-#       in dict probably
-#TODO
 #image global variables
 #       in dict probably
 
@@ -47,6 +44,7 @@ COLOUR_NUM = {
 class tile(QWidget):
     clicked = pyqtSignal()
     mine_click = pyqtSignal()
+    revealed = pyqtSignal()
     flagged = pyqtSignal(int)
     expand = pyqtSignal(int, int)
 
@@ -127,6 +125,8 @@ class tile(QWidget):
         if self.is_flagged or self.is_revealed or self.game_over: return
         
         self.is_revealed = True
+        self.revealed.emit()
+
         if self.is_mine:
             self.mine_click.emit()
         elif self.adjacent == 0:
@@ -141,11 +141,12 @@ class MainWindow(QMainWindow):
     y = DIFFICULTIES[1]["y"]
     total_mines = DIFFICULTIES[1]["mines"]
     mines = 0
+    uncovered_tiles = 0
 
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Minesweeper")
-        
+
         toolbar = QToolBar("Minesweeper Toolbar")
         toolbar.addWidget(QLabel("New Game"))
         toolbar.addSeparator()
@@ -209,15 +210,18 @@ class MainWindow(QMainWindow):
     def create_field(self, x, y, m):
         self.x = x
         self.y = y
+        self.uncovered_tiles = 0
+
         self.grid = QGridLayout()
         self.grid.setSpacing(5)
 
         for i in range(0, x):
             for j in range(0, y):
                 w = tile(i, j)
+                w.revealed.connect(self.tile_revealed)
                 w.flagged.connect(self.tile_flagged)
+                w.mine_click.connect(self.loseGame)
                 w.expand.connect(self.reveal_adjacent)
-                w.mine_click.connect(self.gameOver)
                 self.grid.addWidget(w, j, i)
         
         self.create_new_mines(m)
@@ -265,6 +269,12 @@ class MainWindow(QMainWindow):
         for i in range(max(0, y - 1), min(y+2, self.y)):
             for j in range(max(0, x - 1), min(x+2, self.x)):
                 self.grid.itemAtPosition(i, j).widget().reveal()
+
+    def tile_revealed(self):
+        self.uncovered_tiles += 1
+
+        if self.uncovered_tiles >= (self.x * self.y) - self.total_mines:
+            self.winGame()
 
     def tile_flagged(self, i):
         self.mines += i
@@ -332,7 +342,10 @@ class MainWindow(QMainWindow):
                 w.reveal()
                 break
 
-    def gameOver(self):
+    def winGame(self):
+        print("win")
+
+    def loseGame(self):
         for i in range(self.y):
             for j in range(self.x):
                 w = self.grid.itemAtPosition(i, j).widget()
