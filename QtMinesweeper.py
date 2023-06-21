@@ -1,8 +1,11 @@
-from PyQt6.QtGui import QAction, QFont, QPainter, QColor
+from PyQt6.QtGui import (
+    QAction, QFont, QPainter, QColor, QImage, QPixmap, QIcon
+    )
 from PyQt6.QtCore import QSize, Qt, QTimer, pyqtSignal
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, 
-    QGridLayout, QToolBar)
+    QGridLayout, QToolBar
+    )
 
 class tile(QWidget):
     clicked = pyqtSignal()
@@ -22,7 +25,6 @@ class tile(QWidget):
         self.x = x
         self.y = y
         
-    #                               TODO func
     def paintEvent(self, event):
         p = QPainter()
         p.setRenderHint(QPainter.Antialiasing)
@@ -32,6 +34,7 @@ class tile(QWidget):
     #                                   might need to change way to draw the clicked bomb
     #                               TODO need way to draw wrongly flagged tiles on game end
 
+    #                               TODO make this pseudo code actual code
         #if revealed set both inner/outer colour to background
         #else set inner/outer to tile colours
 
@@ -115,27 +118,29 @@ class MainWindow(QMainWindow):
         self.clock.setFont(f)
         self.clock.setText("000")
 
-        self._timer = QTimer()
         #                           TODO make and connect timer function
+        self._timer = QTimer()
+
+        #                           TODO MAKE BUTTON IMAGE
         self.restart_button = QPushButton("R")
         self.restart_button.setFixedSize(QSize(32, 32))
         self.restart_button.setIconSize(QSize(32, 32))
+        #self.restart_button.setIcon(QIcon("./images/bomb.png"))
         self.restart_button.setFlat(True)
         self.restart_button.released.connect(self.restart)
-        #                           TODO MAKE BUTTON IMAGE
-        #                           TODO MAKE BUTTON FUNCTION
 
         #                           TODO MAKE MINE IMAGE
         mineIcon = QLabel("M")
-        mineIcon.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        mineIcon.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        #mineIcon.setPixmap(QPixmap.fromImage(QImage("./images/bomb.png")))
 
         #                           TODO MAKE CLOCK IMAGE
         clockIcon = QLabel("T")
-        clockIcon.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        clockIcon.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
 
         self.hb.addWidget(mineIcon)
         self.hb.addWidget(self.mines)
-        self.hb.addWidget(self.button)
+        self.hb.addWidget(self.restart_button)
         self.hb.addWidget(self.clock)
         self.hb.addWidget(clockIcon)
 
