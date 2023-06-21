@@ -1,16 +1,67 @@
-from PyQt6.QtGui import QAction
-from PyQt6.QtCore import QSize, Qt, QTimer
+from PyQt6.QtGui import QAction, QFont, QPainter, QColor
+from PyQt6.QtCore import QSize, Qt, QTimer, pyqtSignal
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, 
     QGridLayout, QToolBar)
 
 class tile(QWidget):
+    clicked = pyqtSignal()
+    bomb_click = pyqtSignal()
+
+    is_revealed = False
+    is_start = False
+    is_mine = False
+    is_flagged = False
+    adjacent = 0
+
     def __init__(self, x, y):
+
         super().__init__()
 
-        self.setFixedSize(QSize(20, 20))
+        self.setFixedSize(QSize(40, 40))
         self.x = x
         self.y = y
+        
+    #                               TODO func
+    def paintEvent(self, event):
+        p = QPainter()
+        p.setRenderHint(QPainter.Antialiasing)
+
+        r = event.rect()
+    #                               TODO need some way to draw unrevealed bombs on game end
+    #                                   might need to change way to draw the clicked bomb
+    #                               TODO need way to draw wrongly flagged tiles on game end
+
+        #if revealed set both inner/outer colour to background
+        #else set inner/outer to tile colours
+
+        #fill r with inner colour
+        #draw rect around r with outer
+
+        #if revealed
+        #   if start draw start square
+        #   elif mine draw revealed mine (red background)
+        #   elif adjacent to at least one mine
+        #       draw the number of adjacent using colour based on how many adjacent
+
+        #if flagged draw flag
+    
+    #                               TODO func
+    def mouseReleaseEvent(self, event):
+        pass
+
+    #                               TODO func
+    def click(self):
+        self.clicked.emit()
+
+    def flag(self):
+        self.is_flagged = True
+        self.update()
+
+    def reveal(self):
+        self.is_revealed = True
+        self.update()
+
 
 
 class MainWindow(QMainWindow):
@@ -48,7 +99,7 @@ class MainWindow(QMainWindow):
     def create_header(self):
         self.hb = QHBoxLayout()
 
-        f = QLabel().font()
+        f = QFont()
         f.setPointSize(24)
         f.setWeight(75)
 
