@@ -34,7 +34,7 @@ COLOUR_NUM = {
 
 class tile(QWidget):
     clicked = pyqtSignal()
-    bomb_click = pyqtSignal()
+    mine_click = pyqtSignal()
     flagged = pyqtSignal(int)
     expand = pyqtSignal(int, int)
 
@@ -42,6 +42,7 @@ class tile(QWidget):
     is_start = False
     is_mine = False
     is_flagged = False
+    game_over = False
     adjacent = 0
 
     def __init__(self, x, y):
@@ -56,6 +57,7 @@ class tile(QWidget):
         p.begin(self)
 
         r = event.rect()
+            
     #                               TODO need some way to draw unrevealed bombs on game end
     #                                   might need to change way to draw the clicked bomb
     #                               TODO need way to draw wrongly flagged tiles on game end
@@ -72,18 +74,24 @@ class tile(QWidget):
         p.setPen(pen)
         p.drawRect(r)
 
+        if self.is_flagged:
+            p.fillRect(r, border_colour)
+            if not self.is_mine and self.game_over:
+                pen = QPen(QColor("red"))
+                p.setPen(pen)
+                p.drawText(r, Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignVCenter, "X")
+        elif self.game_over and self.is_mine:
+            p.fillRect(r, QColor("black"))
+
         if self.is_revealed:
             if self.is_start:
                 p.fillRect(r, QColor("green"))
             elif self.is_mine:
-                p.fillRect(r, QColor("yellow"))
+                p.fillRect(r, QColor("red"))
             elif self.adjacent > 0:
                 pen = QPen(COLOUR_NUM[self.adjacent])
                 p.setPen(pen)
                 p.drawText(r, Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignVCenter, str(self.adjacent))
-
-        if self.is_flagged:
-            p.fillRect(r, border_colour)
         
         p.end()
 
@@ -107,15 +115,14 @@ class tile(QWidget):
         
 
     def reveal(self):
-        if self.is_flagged or self.is_revealed:
+        if self.is_flagged or self.is_revealed or self.game_over:
             return
         
         self.is_revealed = True
         if self.is_mine:
-            self.bomb_click.emit()
+            self.mine_click.emit()
         elif self.adjacent == 0:
             self.expand.emit(self.x, self.y)
-            pass
         self.update()
 
 
@@ -131,8 +138,6 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Minesweeper")
-        w = QWidget()
-
         #                           TODO make MENU button bring up dialog
         #                           TODO make dialog choose difficulty
         #                                   easy, normal, expert, custom
@@ -145,16 +150,7 @@ class MainWindow(QMainWindow):
         toolbar.addAction(menu_button)
         self.addToolBar(toolbar)
 
-
-        self.create_header()
-        self.create_field(self.x, self.y, self.total_mines)
-
-        vb = QVBoxLayout()
-        vb.addLayout(self.hb)
-        vb.addLayout(self.grid)
-
-        w.setLayout(vb)
-        self.setCentralWidget(w)
+        self.startGame()
     
     def create_header(self):
         self.hb = QHBoxLayout()
@@ -210,6 +206,7 @@ class MainWindow(QMainWindow):
                 w = tile(i, j)
                 w.flagged.connect(self.tile_flagged)
                 w.expand.connect(self.reveal_adjacent)
+                w.mine_click.connect(self.gameOver)
                 self.grid.addWidget(w, j, i)
         
         self.create_new_mines(x, y, m)
@@ -225,8 +222,7 @@ class MainWindow(QMainWindow):
                 w.is_mine = True
 
                 self.mines += 1
-        
-        self.mines_label.setNum(self.mines)
+
         self.find_adjacent_bombs()
 
     def find_adjacent_bombs(self):
@@ -288,6 +284,35 @@ class MainWindow(QMainWindow):
         w.setLayout(vb)
         self.setCentralWidget(w)
         self.adjustSize()
+    
+    def startGame(self):
+        self.create_header()
+        self.create_field(self.x, self.y, self.total_mines)
+
+        vb = QVBoxLayout()
+        vb.addLayout(self.hb)
+        vb.addLayout(self.grid)
+        
+        w = QWidget()
+        w.setLayout(vb)
+        self.setCentralWidget(w)
+        self.adjustSize()
+        
+        while True:
+            i = randrange(self.y)
+            j = randrange(self.x)
+            w = self.grid.itemAtPosition(i, j).widget()
+            if not w.is_mine and w.adjacent == 0:
+                w.is_start = True
+                w.reveal()
+                break
+
+    def gameOver(self):
+        for i in range(self.y):
+            for j in range(self.x):
+                w = self.grid.itemAtPosition(i, j).widget()
+                w.game_over = True
+                w.update()
 
 
 app = QApplication([])
