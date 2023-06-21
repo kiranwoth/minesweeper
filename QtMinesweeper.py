@@ -1,5 +1,5 @@
 from PyQt6.QtGui import (
-    QAction, QFont, QPainter, QColor, QImage, QPixmap, QIcon
+    QAction, QFont, QPainter, QColor, QImage, QPixmap, QIcon, QPen
     )
 from PyQt6.QtCore import QSize, Qt, QTimer, pyqtSignal
 from PyQt6.QtWidgets import (
@@ -7,9 +7,17 @@ from PyQt6.QtWidgets import (
     QGridLayout, QToolBar
     )
 
+#TODO
+#colour global variables
+#       in dict probably
+#TODO
+#image global variables
+#       in dict probably
+
 class tile(QWidget):
     clicked = pyqtSignal()
     bomb_click = pyqtSignal()
+    flagged = pyqtSignal(int)
 
     is_revealed = False
     is_start = False
@@ -27,7 +35,7 @@ class tile(QWidget):
         
     def paintEvent(self, event):
         p = QPainter()
-        p.setRenderHint(QPainter.Antialiasing)
+        p.begin(self)
 
         r = event.rect()
     #                               TODO need some way to draw unrevealed bombs on game end
@@ -37,33 +45,64 @@ class tile(QWidget):
     #                               TODO make this pseudo code actual code
         #if revealed set both inner/outer colour to background
         #else set inner/outer to tile colours
-
+        inner_colour = None
+        border_colour = None
+        if self.is_revealed:
+            inner_colour, border_colour = QColor("white"), QColor("white")
+        else:
+            inner_colour, border_colour = QColor("lightGray"), QColor("darkGray")
+        
         #fill r with inner colour
-        #draw rect around r with outer
+        #draw rect around r with outer       
+        p.fillRect(r, inner_colour)
+        pen = QPen(border_colour)
+        p.setPen(pen)
+        p.drawRect(r)
 
         #if revealed
         #   if start draw start square
-        #   elif mine draw revealed mine (red background)
+        #   elif mine: draw revealed mine (red background)
         #   elif adjacent to at least one mine
         #       draw the number of adjacent using colour based on how many adjacent
+        if self.is_revealed:
+            pass
 
         #if flagged draw flag
+        if self.is_flagged:
+            p.fillRect(r, border_colour)
+        
+        p.end()
     
     #                               TODO func
     def mouseReleaseEvent(self, event):
-        pass
+        if event.button() == Qt.MouseButton.RightButton:
+            self.flag()
+        
+        elif event.button() == Qt.MouseButton.LeftButton:
+            self.click()
 
     #                               TODO func
     def click(self):
+        self.reveal()
         self.clicked.emit()
 
+    #                               TODO way to change mine remaining number when tile is flagged
     def flag(self):
-        self.is_flagged = True
-        self.update()
+        if self.is_flagged:
+            self.is_flagged = False
+            self.update()
+            self.flagged.emit(1)
+
+        elif not self.is_revealed:
+            self.is_flagged = True
+            self.update()
+            self.flagged.emit(-1)
+        
 
     def reveal(self):
-        self.is_revealed = True
-        self.update()
+        if not self.is_flagged:
+            self.is_revealed = True
+            self.update()
 
 
 
@@ -152,8 +191,9 @@ class MainWindow(QMainWindow):
 
         for i in range(0, x):
             for j in range(0, y):
-                w = QPushButton(f"{i},{j}")
-                w.setFixedSize(QSize(40, 40))
+                #w = QPushButton(f"{i},{j}")
+                #w.setFixedSize(QSize(40, 40))
+                w = tile(i, j)
                 self.grid.addWidget(w, j, i)
 
     def restart(self):
