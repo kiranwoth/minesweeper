@@ -6,6 +6,7 @@ from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, 
     QGridLayout, QToolBar
     )
+from random import randrange
 
 #TODO
 #colour global variables
@@ -13,6 +14,23 @@ from PyQt6.QtWidgets import (
 #TODO
 #image global variables
 #       in dict probably
+
+DEFAULT_LEVEL = {
+    "x": 9,
+    "y": 9,
+    "mines": 10
+}
+
+COLOUR_NUM = {
+    1: QColor("blue"),
+    2: QColor("green"),
+    3: QColor("red"),
+    4: QColor("darkBlue"),
+    5: QColor("darkRed"),
+    6: QColor("darkCyan"),
+    7: QColor("black"),
+    8: QColor("darkGray")
+}
 
 class tile(QWidget):
     clicked = pyqtSignal()
@@ -26,7 +44,6 @@ class tile(QWidget):
     adjacent = 0
 
     def __init__(self, x, y):
-
         super().__init__()
 
         self.setFixedSize(QSize(40, 40))
@@ -65,7 +82,12 @@ class tile(QWidget):
         #   elif adjacent to at least one mine
         #       draw the number of adjacent using colour based on how many adjacent
         if self.is_revealed:
-            pass
+            if self.is_start:
+                p.fillRect(r, QColor("green"))
+            elif self.is_mine:
+                p.fillRect(r, QColor("yellow"))
+            elif self.adjacent > 0:
+                p.fillRect(r, COLOUR_NUM[self.adjacent])
 
         #if flagged draw flag
         if self.is_flagged:
@@ -90,13 +112,13 @@ class tile(QWidget):
     def flag(self):
         if self.is_flagged:
             self.is_flagged = False
-            self.update()
             self.flagged.emit(1)
+            self.update()
 
         elif not self.is_revealed:
             self.is_flagged = True
-            self.update()
             self.flagged.emit(-1)
+            self.update()
         
 
     def reveal(self):
@@ -109,8 +131,10 @@ class tile(QWidget):
 class MainWindow(QMainWindow):
     hb = None
     grid = None
-    x = None
-    y = None
+    x = DEFAULT_LEVEL["x"]
+    y = DEFAULT_LEVEL["y"]
+    total_mines = DEFAULT_LEVEL["mines"]
+    mines = 0
 
     def __init__(self):
         super().__init__()
@@ -129,9 +153,9 @@ class MainWindow(QMainWindow):
         toolbar.addAction(menu_button)
         self.addToolBar(toolbar)
 
+
         self.create_header()
-        #                           TODO make field with the correct things
-        self.create_field(12, 12)
+        self.create_field(self.x, self.y, self.total_mines)
 
         vb = QVBoxLayout()
         vb.addLayout(self.hb)
@@ -147,10 +171,10 @@ class MainWindow(QMainWindow):
         f.setPointSize(24)
         f.setWeight(75)
 
-        self.mines = QLabel()
-        self.mines.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignVCenter)
-        self.mines.setFont(f)
-        self.mines.setText("99")
+        self.mines_label = QLabel()
+        self.mines_label.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignVCenter)
+        self.mines_label.setFont(f)
+        self.mines_label.setNum(self.mines)
 
         self.clock = QLabel()
         self.clock.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignVCenter)
@@ -178,12 +202,12 @@ class MainWindow(QMainWindow):
         clockIcon.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
 
         self.hb.addWidget(mineIcon)
-        self.hb.addWidget(self.mines)
+        self.hb.addWidget(self.mines_label)
         self.hb.addWidget(self.restart_button)
         self.hb.addWidget(self.clock)
         self.hb.addWidget(clockIcon)
 
-    def create_field(self, x, y):
+    def create_field(self, x, y, m):
         self.x = x
         self.y = y
         self.grid = QGridLayout()
@@ -191,14 +215,61 @@ class MainWindow(QMainWindow):
 
         for i in range(0, x):
             for j in range(0, y):
-                #w = QPushButton(f"{i},{j}")
-                #w.setFixedSize(QSize(40, 40))
                 w = tile(i, j)
+                w.flagged.connect(self.tile_flagged)
                 self.grid.addWidget(w, j, i)
+        
+        self.create_new_mines(x, y, m)
+
+    def create_new_mines(self, x, y, m):
+        self.mines = 0
+        while self.mines < m:
+            rand_x = randrange(0, x)
+            rand_y = randrange(0, y)
+            w = self.grid.itemAtPosition(rand_y, rand_x).widget()
+            
+            if not w.is_mine:
+                w.is_mine = True
+
+                self.mines += 1
+        
+        self.mines_label.setNum(self.mines)
+        self.find_adjacent_bombs()
+
+    def find_adjacent_bombs(self):
+        for i in range(self.y):
+            for j in range(self.x):
+                w = self.grid.itemAtPosition(i, j).widget()
+
+                if not w.is_mine:
+                    count = 0
+                    if i != 0:
+                        if self.grid.itemAtPosition(i-1, j).widget().is_mine: count += 1
+                        if j != 0:
+                            if self.grid.itemAtPosition(i-1, j-1).widget().is_mine: count += 1
+                        if j+1 != self.x:
+                            if self.grid.itemAtPosition(i-1, j+1).widget().is_mine: count += 1
+                    if j != 0:
+                        if self.grid.itemAtPosition(i, j-1).widget().is_mine: count += 1
+                    if j+1 != self.x:
+                        if self.grid.itemAtPosition(i, j+1).widget().is_mine: count +=1
+                    if i+1 != self.y:
+                        if self.grid.itemAtPosition(i+1, j).widget().is_mine: count += 1
+                        if j != 0:
+                            if self.grid.itemAtPosition(i+1, j-1).widget().is_mine: count += 1
+                        if j+1 != self.x:
+                            if self.grid.itemAtPosition(i+1, j+1).widget().is_mine: count += 1
+                    w.adjacent = count
+
+
+    def tile_flagged(self, i):
+        self.mines += i
+
+        self.mines_label.setNum(self.mines)
 
     def restart(self):
+        self.create_field(self.x, self.y, 10)
         self.create_header()
-        self.create_field(self.x, self.y)
 
         vb = QVBoxLayout()
         vb.addLayout(self.hb)
