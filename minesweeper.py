@@ -4,7 +4,7 @@ from PyQt6.QtGui import (
 from PyQt6.QtCore import QSize, Qt, QTimer, pyqtSignal
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, 
-    QGridLayout, QToolBar
+    QGridLayout, QToolBar, QDialogButtonBox, QMessageBox
     )
 from random import randrange
 
@@ -15,10 +15,22 @@ from random import randrange
 #image global variables
 #       in dict probably
 
-DEFAULT_LEVEL = {
-    "x": 9,
-    "y": 9,
-    "mines": 10
+DIFFICULTIES = {
+    0: {
+        "x": 9,
+        "y": 9,
+        "mines": 10
+    },
+    1: {
+        "x": 16,
+        "y": 16,
+        "mines": 40
+    },
+    2: {
+        "x": 30,
+        "y": 16,
+        "mines": 99
+    }
 }
 
 COLOUR_NUM = {
@@ -48,7 +60,7 @@ class tile(QWidget):
     def __init__(self, x, y):
         super().__init__()
 
-        self.setFixedSize(QSize(30, 30))
+        self.setFixedSize(QSize(20, 20))
         self.x = x
         self.y = y
         
@@ -57,10 +69,6 @@ class tile(QWidget):
         p.begin(self)
 
         r = event.rect()
-            
-    #                               TODO need some way to draw unrevealed bombs on game end
-    #                                   might need to change way to draw the clicked bomb
-    #                               TODO need way to draw wrongly flagged tiles on game end
 
         inner_colour = None
         border_colour = QColor("gray")
@@ -103,20 +111,20 @@ class tile(QWidget):
             self.reveal()
 
     def flag(self):
+        if self.game_over: return
+
         if self.is_flagged:
             self.is_flagged = False
             self.flagged.emit(1)
             self.update()
 
-        elif not self.is_revealed:
+        elif not self.is_revealed :
             self.is_flagged = True
             self.flagged.emit(-1)
             self.update()
-        
 
     def reveal(self):
-        if self.is_flagged or self.is_revealed or self.game_over:
-            return
+        if self.is_flagged or self.is_revealed or self.game_over: return
         
         self.is_revealed = True
         if self.is_mine:
@@ -126,28 +134,31 @@ class tile(QWidget):
         self.update()
 
 
-
 class MainWindow(QMainWindow):
     hb = None
     grid = None
-    x = DEFAULT_LEVEL["x"]
-    y = DEFAULT_LEVEL["y"]
-    total_mines = DEFAULT_LEVEL["mines"]
+    x = DIFFICULTIES[1]["x"]
+    y = DIFFICULTIES[1]["y"]
+    total_mines = DIFFICULTIES[1]["mines"]
     mines = 0
 
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Minesweeper")
-        #                           TODO make MENU button bring up dialog
-        #                           TODO make dialog choose difficulty
-        #                                   easy, normal, expert, custom
-        #                           TODO make this dialog popup on window start
+        
         toolbar = QToolBar("Minesweeper Toolbar")
+        toolbar.addWidget(QLabel("New Game"))
+        toolbar.addSeparator()
+        mode = QAction("Easy", self)
+        mode.triggered.connect(self.start_easy)
+        toolbar.addAction(mode)
+        mode = QAction("Normal", self)
+        mode.triggered.connect(self.start_normal)
+        toolbar.addAction(mode)
+        mode = QAction("Expert", self)
+        mode.triggered.connect(self.start_expert)
+        toolbar.addAction(mode)
 
-        menu_button = QAction("Menu", self)
-        menu_button.triggered.connect(self.open_menu)
-
-        toolbar.addAction(menu_button)
         self.addToolBar(toolbar)
 
         self.startGame()
@@ -162,7 +173,7 @@ class MainWindow(QMainWindow):
         self.mines_label = QLabel()
         self.mines_label.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignVCenter)
         self.mines_label.setFont(f)
-        self.mines_label.setNum(self.mines)
+        self.mines_label.setNum(self.total_mines)
 
         self.clock = QLabel()
         self.clock.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignVCenter)
@@ -209,13 +220,13 @@ class MainWindow(QMainWindow):
                 w.mine_click.connect(self.gameOver)
                 self.grid.addWidget(w, j, i)
         
-        self.create_new_mines(x, y, m)
+        self.create_new_mines(m)
 
-    def create_new_mines(self, x, y, m):
+    def create_new_mines(self, m):
         self.mines = 0
         while self.mines < m:
-            rand_x = randrange(0, x)
-            rand_y = randrange(0, y)
+            rand_x = randrange(0, self.x)
+            rand_y = randrange(0, self.y)
             w = self.grid.itemAtPosition(rand_y, rand_x).widget()
             
             if not w.is_mine:
@@ -261,7 +272,7 @@ class MainWindow(QMainWindow):
         self.mines_label.setNum(self.mines)
 
     def restart(self):
-        self.create_field(self.x, self.y, 10)
+        self.create_field(self.x, self.y, self.total_mines)
         self.create_header()
 
         vb = QVBoxLayout()
@@ -272,18 +283,32 @@ class MainWindow(QMainWindow):
         w.setLayout(vb)
         self.setCentralWidget(w)
 
-    def open_menu(self):
-        self.create_header()
-        self.create_field(5, 5)
+        while True:
+            i = randrange(self.y)
+            j = randrange(self.x)
+            w = self.grid.itemAtPosition(i, j).widget()
+            if not w.is_mine and w.adjacent == 0:
+                w.is_start = True
+                w.reveal()
+                break
 
-        vb = QVBoxLayout()
-        vb.addLayout(self.hb)
-        vb.addLayout(self.grid)
-        
-        w = QWidget()
-        w.setLayout(vb)
-        self.setCentralWidget(w)
-        self.adjustSize()
+    def start_easy(self):
+        self.x = DIFFICULTIES[0]["x"]
+        self.y = DIFFICULTIES[0]["y"]
+        self.total_mines = DIFFICULTIES[0]["mines"]
+        self.startGame()
+
+    def start_normal(self):
+        self.x = DIFFICULTIES[1]["x"]
+        self.y = DIFFICULTIES[1]["y"]
+        self.total_mines = DIFFICULTIES[1]["mines"]
+        self.startGame()
+
+    def start_expert(self):
+        self.x = DIFFICULTIES[2]["x"]
+        self.y = DIFFICULTIES[2]["y"]
+        self.total_mines = DIFFICULTIES[2]["mines"]
+        self.startGame()
     
     def startGame(self):
         self.create_header()
