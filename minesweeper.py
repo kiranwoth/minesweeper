@@ -7,6 +7,7 @@ from PyQt6.QtWidgets import (
     QGridLayout, QToolBar, QMessageBox
     )
 from random import randrange
+import time
 
 #TODO
 #image global variables
@@ -141,6 +142,7 @@ class MainWindow(QMainWindow):
     y = DIFFICULTIES[1]["y"]
     total_mines = DIFFICULTIES[1]["mines"]
     mines = 0
+    time = 0
     uncovered_tiles = 0
 
     def __init__(self):
@@ -171,18 +173,17 @@ class MainWindow(QMainWindow):
         f.setPointSize(24)
         f.setWeight(75)
 
-        self.mines_label = QLabel()
+        self.mines_label = QLabel(f"{self.total_mines}")
         self.mines_label.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignVCenter)
         self.mines_label.setFont(f)
-        self.mines_label.setNum(self.total_mines)
 
-        self.clock = QLabel()
-        self.clock.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignVCenter)
-        self.clock.setFont(f)
-        self.clock.setText("000")
+        self.timer_label = QLabel("%03d" % self.time)
+        self.timer_label.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignVCenter)
+        self.timer_label.setFont(f)
 
-        #                           TODO make and connect timer function
-        self._timer = QTimer()
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.timer_update)
+        self.timer.start(1000)
 
         self.restart_button = QPushButton("R")
         self.restart_button.setFixedSize(QSize(32, 32))
@@ -199,8 +200,12 @@ class MainWindow(QMainWindow):
         self.hb.addWidget(mineIcon)
         self.hb.addWidget(self.mines_label)
         self.hb.addWidget(self.restart_button)
-        self.hb.addWidget(self.clock)
+        self.hb.addWidget(self.timer_label)
         self.hb.addWidget(clockIcon)
+
+    def timer_update(self):
+        self.time += 1
+        self.timer_label.setText("%03d" % self.time)
 
     def create_field(self, x, y, m):
         self.x = x
@@ -222,7 +227,6 @@ class MainWindow(QMainWindow):
         self.create_new_mines(m)
 
     def create_new_mines(self, m):
-        self.mines = 0
         while self.mines < m:
             rand_x = randrange(0, self.x)
             rand_y = randrange(0, self.y)
@@ -277,6 +281,9 @@ class MainWindow(QMainWindow):
         self.mines_label.setNum(self.mines)
 
     def restart(self):
+        self.mines = 0
+        self.time = 0
+
         self.create_field(self.x, self.y, self.total_mines)
         self.create_header()
 
@@ -316,6 +323,9 @@ class MainWindow(QMainWindow):
         self.startGame()
     
     def startGame(self):
+        self.mines = 0
+        self.time = 0
+
         self.create_header()
         self.create_field(self.x, self.y, self.total_mines)
 
