@@ -184,20 +184,15 @@ class MainWindow(QMainWindow):
         #                           TODO make and connect timer function
         self._timer = QTimer()
 
-        #                           TODO MAKE BUTTON IMAGE
         self.restart_button = QPushButton("R")
         self.restart_button.setFixedSize(QSize(32, 32))
         self.restart_button.setIconSize(QSize(32, 32))
-        #self.restart_button.setIcon(QIcon("./images/bomb.png"))
         self.restart_button.setFlat(True)
         self.restart_button.released.connect(self.restart)
 
-        #                           TODO MAKE MINE IMAGE
         mineIcon = QLabel("M")
         mineIcon.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-        #mineIcon.setPixmap(QPixmap.fromImage(QImage("./images/bomb.png")))
 
-        #                           TODO MAKE CLOCK IMAGE
         clockIcon = QLabel("T")
         clockIcon.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
 
