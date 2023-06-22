@@ -4,7 +4,7 @@ from PyQt6.QtGui import (
 from PyQt6.QtCore import QSize, Qt, QTimer, pyqtSignal
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, 
-    QGridLayout, QToolBar, QDialogButtonBox, QMessageBox
+    QGridLayout, QToolBar, QMessageBox
     )
 from random import randrange
 
@@ -343,7 +343,14 @@ class MainWindow(QMainWindow):
                 break
 
     def winGame(self):
-        print("win")
+        dlg = QMessageBox()
+        dlg.setText("You Won!")
+
+        dlg.addButton(QPushButton("Continue"), QMessageBox.ButtonRole.AcceptRole)
+
+        g = dlg.exec()
+
+        self.restart()
 
     def loseGame(self):
         for i in range(self.y):
