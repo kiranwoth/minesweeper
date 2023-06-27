@@ -358,6 +358,7 @@ class MainWindow(QMainWindow):
         self.restart()
 
     def loseGame(self):
+        self.timer.stop()
         for i in range(self.y):
             for j in range(self.x):
                 w = self.grid.itemAtPosition(i, j).widget()
