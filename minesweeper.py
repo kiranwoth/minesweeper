@@ -365,6 +365,7 @@ class MainWindow(QMainWindow):
                 break
 
     def winGame(self):
+        self.timer.stop()
         dlg = QMessageBox()
         dlg.setText("You Won!")
 
