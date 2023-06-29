@@ -48,6 +48,7 @@ class tile(QWidget):
     revealed = pyqtSignal()
     flagged = pyqtSignal(int)
     expand = pyqtSignal(int, int)
+    auto_reveal= pyqtSignal(int, int)
 
     is_revealed = False
     is_start = False
@@ -123,7 +124,11 @@ class tile(QWidget):
             self.update()
 
     def reveal(self):
-        if self.is_flagged or self.is_revealed or self.game_over: return
+        if self.is_flagged or self.game_over: return
+
+        if self.is_revealed and self.adjacent > 0:
+            self.auto_reveal.emit(self.x, self.y)
+        elif self.is_revealed: return
         
         self.is_revealed = True
         self.revealed.emit()
@@ -132,6 +137,7 @@ class tile(QWidget):
             self.mine_click.emit()
         elif self.adjacent == 0:
             self.expand.emit(self.x, self.y)
+
         self.update()
 
 
@@ -222,6 +228,7 @@ class MainWindow(QMainWindow):
                 w.flagged.connect(self.tile_flagged)
                 w.mine_click.connect(self.loseGame)
                 w.expand.connect(self.reveal_adjacent)
+                w.auto_reveal.connect(self.find_adjacent_flags)
                 self.grid.addWidget(w, j, i)
         
         self.create_new_mines(m)
@@ -267,7 +274,17 @@ class MainWindow(QMainWindow):
     def reveal_adjacent(self, x, y):
         for i in range(max(0, y - 1), min(y+2, self.y)):
             for j in range(max(0, x - 1), min(x+2, self.x)):
-                self.grid.itemAtPosition(i, j).widget().reveal()
+                if not self.grid.itemAtPosition(i, j).widget().is_revealed: self.grid.itemAtPosition(i, j).widget().reveal()
+    
+    def find_adjacent_flags(self, x, y):
+        counter = 0
+
+        for i in range(max(0, y - 1), min(y+2, self.y)):
+            for j in range(max(0, x - 1), min(x+2, self.x)):
+                if self.grid.itemAtPosition(i, j).widget().is_flagged: counter += 1
+        
+        if counter >= self.grid.itemAtPosition(y, x).widget().adjacent:
+            self.reveal_adjacent(x, y)
 
     def tile_revealed(self):
         self.uncovered_tiles += 1
